@@ -2,13 +2,8 @@
 
 import type { ReactNode } from "react"
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react"
-
-interface User {
-  id: string
-  email: string
-  name: string
-  isCreator: boolean
-}
+import { User } from "@/lib/types"
+import { isValidEmail, validatePassword } from "@/lib/utils"
 
 interface AuthContextType {
   user: User | null
@@ -55,23 +50,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Email and password are required")
     }
 
+    if (!isValidEmail(email)) {
+      throw new Error("Please enter a valid email address")
+    }
+
     setIsLoading(true)
 
     try {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      // Basic email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(email)) {
-        throw new Error("Please enter a valid email address")
-      }
-
       const mockUser: User = {
         id: Date.now().toString(),
         email: email.toLowerCase().trim(),
         name: email.split("@")[0],
         isCreator: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       }
 
       setUser(mockUser)
@@ -88,8 +83,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("All fields are required")
     }
 
-    if (password.length < 6) {
-      throw new Error("Password must be at least 6 characters long")
+    if (!isValidEmail(email)) {
+      throw new Error("Please enter a valid email address")
+    }
+
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.isValid) {
+      throw new Error(passwordValidation.errors[0])
     }
 
     setIsLoading(true)
@@ -98,17 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      // Basic email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(email)) {
-        throw new Error("Please enter a valid email address")
-      }
-
       const mockUser: User = {
         id: Date.now().toString(),
         email: email.toLowerCase().trim(),
         name: name.trim(),
         isCreator: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       }
 
       setUser(mockUser)

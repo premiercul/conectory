@@ -1,15 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Share2, Check } from "lucide-react"
-import Image from "next/image"
+import { ProductCard } from "@/components/product-card"
+import { mockProducts } from "@/lib/mock-data"
+import { Product, ProductCategory } from "@/lib/types"
 
 export default function ProductsPage() {
-  const [copiedLinks, setCopiedLinks] = useState<{ [key: string]: boolean }>({})
+  const [products, setProducts] = useState<Product[]>(mockProducts)
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all')
   const [isClient, setIsClient] = useState(false)
 
   // Ensure we're on the client side before rendering interactive elements
@@ -17,189 +15,90 @@ export default function ProductsPage() {
     setIsClient(true)
   }, [])
 
-  const products = [
-    {
-      id: 1,
-      title: "100 Daily Affirmations PDF",
-      slug: "100-daily-affirmations",
-      price: 2000, // ₦2,000
-      type: "eBook",
-      image: "/placeholder.svg?height=300&width=300&text=Daily+Affirmations",
-      description: "Transform your mindset with powerful daily affirmations",
-    },
-    {
-      id: 2,
-      title: "Morning Motivation Audio Pack",
-      slug: "morning-motivation-audio-pack",
-      price: 3200, // ₦3,200
-      type: "Audio",
-      image: "/placeholder.svg?height=300&width=300&text=Morning+Audio",
-      description: "Start your day right with energizing audio content",
-    },
-    {
-      id: 3,
-      title: "Success Mindset Toolkit",
-      slug: "success-mindset-toolkit",
-      price: 4800, // ₦4,800
-      type: "Bundle",
-      image: "/placeholder.svg?height=300&width=300&text=Success+Toolkit",
-      description: "Complete toolkit for developing a winning mindset",
-    },
-    {
-      id: 4,
-      title: "Productivity Planner 2025",
-      slug: "productivity-planner-2025",
-      price: 2800, // ₦2,800
-      type: "Planner",
-      image: "/placeholder.svg?height=300&width=300&text=Productivity+Planner",
-      description: "Plan your way to peak productivity this year",
-    },
-    {
-      id: 5,
-      title: "Confidence Building Guide",
-      slug: "confidence-building-guide",
-      price: 2400, // ₦2,400
-      type: "eBook",
-      image: "/placeholder.svg?height=300&width=300&text=Confidence+Guide",
-      description: "Build unshakeable confidence in any situation",
-    },
-    {
-      id: 6,
-      title: "Meditation & Mindfulness Pack",
-      slug: "meditation-mindfulness-pack",
-      price: 4000, // ₦4,000
-      type: "Audio",
-      image: "/placeholder.svg?height=300&width=300&text=Meditation+Pack",
-      description: "Find inner peace with guided meditation sessions",
-    },
+  const categories: { value: ProductCategory | 'all'; label: string }[] = [
+    { value: 'all', label: 'All Products' },
+    { value: 'quotes', label: 'Quotes' },
+    { value: 'ebooks', label: 'eBooks' },
+    { value: 'audio', label: 'Audio' },
+    { value: 'vault', label: 'Vault' },
+    { value: 'planner', label: 'Planner' },
+    { value: 'toolkit', label: 'Toolkit' },
   ]
 
-  const handleCopyLink = async (slug: string) => {
-    if (!isClient) return
+  const filteredProducts = selectedCategory === 'all' 
+    ? products 
+    : products.filter(product => product.category === selectedCategory)
 
-    try {
-      const productUrl = `${window.location.origin}/p/${slug}`
-
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(productUrl)
-      } else {
-        // Fallback for older browsers or non-secure contexts
-        const textArea = document.createElement("textarea")
-        textArea.value = productUrl
-        textArea.style.position = "fixed"
-        textArea.style.left = "-999999px"
-        textArea.style.top = "-999999px"
-        document.body.appendChild(textArea)
-        textArea.focus()
-        textArea.select()
-        document.execCommand("copy")
-        document.body.removeChild(textArea)
-      }
-
-      setCopiedLinks((prev) => ({ ...prev, [slug]: true }))
-
-      // Reset the copied state after 2 seconds
-      setTimeout(() => {
-        setCopiedLinks((prev) => ({ ...prev, [slug]: false }))
-      }, 2000)
-    } catch (err) {
-      console.error("Failed to copy link:", err)
-      // Still show success message even if copy failed
-      setCopiedLinks((prev) => ({ ...prev, [slug]: true }))
-      setTimeout(() => {
-        setCopiedLinks((prev) => ({ ...prev, [slug]: false }))
-      }, 2000)
-    }
-  }
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 0,
-    }).format(price)
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-white rounded-lg p-6 space-y-4">
+                  <div className="aspect-square bg-gray-200 rounded"></div>
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 rounded"></div>
+                    <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-black mb-4">Digital Products</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Discover our collection of digital products designed to inspire, motivate, and transform your life.
-          </p>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-black mb-4">Discover Digital Products</h1>
+          <p className="text-gray-600">Find the perfect motivational content to fuel your success journey.</p>
+        </div>
+
+        {/* Category Filter */}
+        <div className="mb-8">
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <button
+                key={category.value}
+                onClick={() => setSelectedCategory(category.value)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === category.value
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {category.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product) => (
-            <Card
-              key={product.id}
-              className="bg-white shadow-sm hover:shadow-md transition-shadow border border-gray-100"
-            >
-              <CardContent className="p-0">
-                <div className="aspect-square bg-gray-50 overflow-hidden rounded-t-lg">
-                  <Image
-                    src={product.image || "/placeholder.svg"}
-                    alt={product.title}
-                    width={300}
-                    height={300}
-                    className="w-full h-full object-cover"
-                    priority={product.id <= 3} // Prioritize first 3 images
-                  />
-                </div>
-
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <Badge variant="secondary" className="text-xs">
-                      {product.type}
-                    </Badge>
-                    <span className="text-2xl font-bold text-black">{formatPrice(product.price)}</span>
-                  </div>
-
-                  <h3 className="text-xl font-semibold text-black mb-3">{product.title}</h3>
-                  <p className="text-gray-600 mb-6 text-sm leading-relaxed">{product.description}</p>
-
-                  <div className="space-y-3">
-                    <Link href={`/p/${product.slug}`} className="block">
-                      <Button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white">Buy Now</Button>
-                    </Link>
-
-                    {isClient && (
-                      <Button
-                        variant="outline"
-                        onClick={() => handleCopyLink(product.slug)}
-                        className="w-full bg-transparent"
-                        type="button"
-                      >
-                        {copiedLinks[product.slug] ? (
-                          <>
-                            <Check className="w-4 h-4 mr-2" />
-                            Link Copied!
-                          </>
-                        ) : (
-                          <>
-                            <Share2 className="w-4 h-4 mr-2" />
-                            Copy Link
-                          </>
-                        )}
-                      </Button>
-                    )}
-
-                    {/* Fallback for server-side rendering */}
-                    {!isClient && (
-                      <Button variant="outline" className="w-full bg-transparent" disabled>
-                        <Share2 className="w-4 h-4 mr-2" />
-                        Copy Link
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
+
+        {/* Empty State */}
+        {filteredProducts.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
+            <p className="text-gray-500">Try selecting a different category or check back later for new products.</p>
+          </div>
+        )}
       </div>
     </div>
   )

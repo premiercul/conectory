@@ -1,295 +1,173 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Share2, Check, ShoppingCart } from "lucide-react"
-import Image from "next/image"
-import { useAuth } from "@/contexts/auth-context"
+import { Separator } from "@/components/ui/separator"
+import { Star, Download, Share2, CheckCircle, ArrowLeft } from "lucide-react"
+import { mockProducts } from "@/lib/mock-data"
+import { Product } from "@/lib/types"
+import { formatPrice, copyToClipboard } from "@/lib/utils"
+import Link from "next/link"
 
-// Mock product data - in real app, this would come from database
-const getProductBySlug = (slug: string) => {
-  const products = {
-    "100-daily-affirmations": {
-      id: 1,
-      title: "100 Daily Affirmations PDF",
-      slug: "100-daily-affirmations",
-      price: 2000, // ₦2,000
-      type: "eBook",
-      image: "/placeholder.svg?height=400&width=400&text=Daily+Affirmations",
-      description:
-        "Transform your mindset with 100 powerful daily affirmations designed to boost confidence, attract success, and create positive change in your life. This comprehensive PDF includes morning and evening affirmations, plus guidance on how to use them effectively.",
-      features: [
-        "100 carefully crafted affirmations",
-        "Morning and evening routines",
-        "Printable format for easy access",
-        "Bonus meditation guide included",
-      ],
-      downloadUrl: "/sample-files/daily-affirmations.pdf",
-    },
-    "morning-motivation-audio-pack": {
-      id: 2,
-      title: "Morning Motivation Audio Pack",
-      slug: "morning-motivation-audio-pack",
-      price: 3200, // ₦3,200
-      type: "Audio",
-      image: "/placeholder.svg?height=400&width=400&text=Morning+Audio",
-      description:
-        "Start every day with purpose and energy. This audio pack contains 10 powerful morning motivation sessions to kickstart your day with positivity and drive.",
-      features: [
-        "10 high-quality audio sessions",
-        "5-15 minute episodes",
-        "MP3 format for all devices",
-        "Bonus wake-up meditation",
-      ],
-      downloadUrl: "/sample-files/morning-motivation.zip",
-    },
-    "success-mindset-toolkit": {
-      id: 3,
-      title: "Success Mindset Toolkit",
-      slug: "success-mindset-toolkit",
-      price: 4800, // ₦4,800
-      type: "Bundle",
-      image: "/placeholder.svg?height=400&width=400&text=Success+Toolkit",
-      description:
-        "Complete toolkit for developing a winning mindset. Includes worksheets, audio guides, and actionable strategies.",
-      features: [
-        "5 comprehensive worksheets",
-        "3 guided audio sessions",
-        "Goal-setting templates",
-        "Progress tracking tools",
-      ],
-      downloadUrl: "/sample-files/success-toolkit.zip",
-    },
-    "productivity-planner-2025": {
-      id: 4,
-      title: "Productivity Planner 2025",
-      slug: "productivity-planner-2025",
-      price: 2800, // ₦2,800
-      type: "Planner",
-      image: "/placeholder.svg?height=400&width=400&text=Productivity+Planner",
-      description: "Plan your way to peak productivity this year with this comprehensive digital planner.",
-      features: [
-        "12-month planning pages",
-        "Weekly and daily layouts",
-        "Goal tracking sections",
-        "Habit tracker included",
-      ],
-      downloadUrl: "/sample-files/productivity-planner.pdf",
-    },
-    "confidence-building-guide": {
-      id: 5,
-      title: "Confidence Building Guide",
-      slug: "confidence-building-guide",
-      price: 2400, // ₦2,400
-      type: "eBook",
-      image: "/placeholder.svg?height=400&width=400&text=Confidence+Guide",
-      description: "Build unshakeable confidence in any situation with proven strategies and exercises.",
-      features: [
-        "Step-by-step confidence building",
-        "Practical exercises",
-        "Real-world applications",
-        "Bonus confidence affirmations",
-      ],
-      downloadUrl: "/sample-files/confidence-guide.pdf",
-    },
-    "meditation-mindfulness-pack": {
-      id: 6,
-      title: "Meditation & Mindfulness Pack",
-      slug: "meditation-mindfulness-pack",
-      price: 4000, // ₦4,000
-      type: "Audio",
-      image: "/placeholder.svg?height=400&width=400&text=Meditation+Pack",
-      description:
-        "Find inner peace with guided meditation sessions designed for beginners and experienced practitioners.",
-      features: [
-        "8 guided meditation sessions",
-        "Beginner to advanced levels",
-        "Stress relief techniques",
-        "Mindfulness exercises",
-      ],
-      downloadUrl: "/sample-files/meditation-pack.zip",
-    },
-  }
+export default function ProductDetailPage() {
+  const params = useParams()
+  const [product, setProduct] = useState<Product | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
 
-  return products[slug as keyof typeof products] || null
-}
-
-export default function ProductDetailPage({ params }: { params: { slug: string } }) {
-  const [linkCopied, setLinkCopied] = useState(false)
-  const [isClient, setIsClient] = useState(false)
-  const { user } = useAuth()
-  const product = getProductBySlug(params.slug)
-
-  // Ensure we're on the client side before rendering interactive elements
   useEffect(() => {
-    setIsClient(true)
-  }, [])
+    const slug = params.slug as string
+    const foundProduct = mockProducts.find(p => p.slug === slug)
+    setProduct(foundProduct || null)
+    setIsLoading(false)
+  }, [params.slug])
 
-  if (!product) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-black mb-4">Product Not Found</h1>
-          <p className="text-gray-600 mb-6">The product you're looking for doesn't exist.</p>
-          <Link href="/products">
-            <Button className="bg-emerald-500 hover:bg-emerald-600 text-white">Browse All Products</Button>
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 0,
-    }).format(price)
-  }
-
-  const handleCopyLink = async () => {
-    if (!isClient) return
-
-    try {
-      const productUrl = `${window.location.origin}/p/${product.slug}`
-
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(productUrl)
-      } else {
-        // Fallback for older browsers or non-secure contexts
-        const textArea = document.createElement("textarea")
-        textArea.value = productUrl
-        textArea.style.position = "fixed"
-        textArea.style.left = "-999999px"
-        textArea.style.top = "-999999px"
-        document.body.appendChild(textArea)
-        textArea.focus()
-        textArea.select()
-        document.execCommand("copy")
-        document.body.removeChild(textArea)
-      }
-
-      setLinkCopied(true)
-      setTimeout(() => setLinkCopied(false), 2000)
-    } catch (err) {
-      console.error("Failed to copy link:", err)
-      // Still show success message even if copy failed
-      setLinkCopied(true)
-      setTimeout(() => setLinkCopied(false), 2000)
+  const handleShare = async () => {
+    const url = `${window.location.origin}/p/${product?.slug}`
+    const success = await copyToClipboard(url)
+    
+    if (success) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     }
   }
 
   const handleBuyNow = () => {
-    if (!user) {
-      alert("Please sign in to make a purchase")
-      window.location.href = "/login"
-      return
-    }
-    window.location.href = `/checkout?product=${product.slug}`
+    window.location.href = `/checkout?product=${product?.slug}`
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-500"></div>
+      </div>
+    )
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md w-full mx-4">
+          <CardContent className="p-8 text-center">
+            <h1 className="text-2xl font-bold text-black mb-4">Product Not Found</h1>
+            <p className="text-gray-600 mb-6">The product you're looking for doesn't exist.</p>
+            <Link href="/products">
+              <Button className="bg-emerald-500 hover:bg-emerald-600 text-white">
+                Browse Products
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
-    <div className="bg-white min-h-screen">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid lg:grid-cols-2 gap-12">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Back Button */}
+        <div className="mb-6">
+          <Link href="/products">
+            <Button variant="ghost" className="text-gray-600 hover:text-black">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Products
+            </Button>
+          </Link>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-8">
           {/* Product Image */}
           <div className="space-y-4">
-            <div className="aspect-square bg-gray-50 rounded-lg overflow-hidden">
-              <Image
-                src={product.image || "/placeholder.svg"}
+            <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+              <img
+                src={product.image}
                 alt={product.title}
-                width={400}
-                height={400}
                 className="w-full h-full object-cover"
-                priority
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement
+                  target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Crect width='600' height='600' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='system-ui' font-size='24' fill='%236b7280'%3EProduct Image%3C/text%3E%3C/svg%3E"
+                }}
               />
             </div>
           </div>
 
           {/* Product Details */}
           <div className="space-y-6">
+            {/* Header */}
             <div>
-              <Badge variant="secondary" className="mb-3">
-                {product.type}
-              </Badge>
-              <h1 className="text-3xl md:text-4xl font-bold text-black mb-4">{product.title}</h1>
-              <p className="text-3xl font-bold text-emerald-600 mb-6">{formatPrice(product.price)}</p>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">
+                  {product.type}
+                </Badge>
+              </div>
+              <h1 className="text-3xl font-bold text-black mb-2">{product.title}</h1>
+              <p className="text-gray-600 mb-4">by {product.creatorName}</p>
+              <div className="text-3xl font-bold text-emerald-600 mb-4">
+                {formatPrice(product.price)}
+              </div>
             </div>
 
+            {/* Description */}
             <div>
-              <h2 className="text-xl font-semibold text-black mb-3">Description</h2>
-              <p className="text-gray-600 leading-relaxed mb-6">{product.description}</p>
+              <h3 className="font-semibold text-black mb-2">Description</h3>
+              <p className="text-gray-600 leading-relaxed">{product.description}</p>
             </div>
 
-            <div>
-              <h2 className="text-xl font-semibold text-black mb-3">What's Included</h2>
-              <ul className="space-y-2">
-                {product.features.map((feature, index) => (
-                  <li key={index} className="flex items-center text-gray-600">
-                    <Check className="w-5 h-5 text-emerald-500 mr-3 flex-shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="space-y-4 pt-6">
-              <Button
-                onClick={handleBuyNow}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-lg py-3"
-                type="button"
-              >
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                Buy Now - {formatPrice(product.price)}
-              </Button>
-
-              {isClient && (
-                <Button variant="outline" onClick={handleCopyLink} className="w-full bg-transparent" type="button">
-                  {linkCopied ? (
-                    <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Link Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Copy Link
-                    </>
-                  )}
-                </Button>
-              )}
-
-              {/* Fallback for server-side rendering */}
-              {!isClient && (
-                <Button variant="outline" className="w-full bg-transparent" disabled>
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Copy Link
-                </Button>
-              )}
-            </div>
-
-            {!user && (
-              <div className="bg-amber-50 p-4 rounded-lg">
-                <p className="text-sm text-amber-800">
-                  <strong>Sign in required:</strong> Please{" "}
-                  <Link href="/login" className="underline hover:text-amber-900">
-                    sign in
-                  </Link>{" "}
-                  or{" "}
-                  <Link href="/signup" className="underline hover:text-amber-900">
-                    create an account
-                  </Link>{" "}
-                  to make a purchase.
-                </p>
+            {/* Features */}
+            {product.features && product.features.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-black mb-3">What's Included</h3>
+                <ul className="space-y-2">
+                  {product.features.map((feature, index) => (
+                    <li key={index} className="flex items-center text-gray-600">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 mr-2 flex-shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600">
-                <strong>Instant Download:</strong> Get immediate access to your digital product after purchase. All
-                files are delivered via email and available in your account dashboard.
+            <Separator />
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500">Sales:</span>
+                <span className="ml-2 font-medium">{product.salesCount || 0}</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button
+                onClick={handleBuyNow}
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 text-lg"
+                size="lg"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Buy Now - {formatPrice(product.price)}
+              </Button>
+              
+              <Button
+                onClick={handleShare}
+                variant="outline"
+                className="w-full bg-transparent"
+                size="lg"
+              >
+                <Share2 className="w-5 h-5 mr-2" />
+                {copied ? "Link Copied!" : "Share Product"}
+              </Button>
+            </div>
+
+            {/* Security Notice */}
+            <div className="bg-emerald-50 p-4 rounded-lg">
+              <p className="text-sm text-emerald-800">
+                <strong>Secure Purchase:</strong> Your payment is protected with industry-standard encryption. 
+                Get instant access to your digital product after purchase.
               </p>
             </div>
           </div>
